@@ -2,7 +2,7 @@
 
 #Этап 1: 
 #Версия
-FROM python:3.11-alpine as build
+FROM python:3.11-alpine as builder
 #Создание проекта
 WORKDIR /project 
 # Устанавливаем необходимые системные зависимости, чтобы можно было собирать Python-библиотеки
