@@ -4,7 +4,7 @@
 #Версия
 FROM python:3.11-alpine as builder
 #Создание проекта
-WORKDIR /project 
+WORKDIR /app
 # Устанавливаем необходимые системные зависимости, чтобы можно было собирать Python-библиотеки
 RUN apk add --no-cache \
 # базовые компиляторы и make
@@ -37,10 +37,10 @@ RUN apk add --no-cache \
 RUN adduser -m appuser
 
 #Создаём рабочую дерикторию
-WORKDIR /project
+WORKDIR /app
 
 # Копируем собранный проект из builder-контейнера
-COPY --from=builder /project /project
+COPY --from=builder /app /app
 
 # Устанавливаем зависимости без dev и тестовых библиотек
 RUN pip install --no-cache-dir .
@@ -50,5 +50,3 @@ USER appuser
 
 # Команда запуска FastAPI-приложения через uvicorn
 CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8070"]
-
-
