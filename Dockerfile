@@ -1,52 +1,50 @@
-#MULTI STAGE BUILD - два этапа:
-
-#Этап 1: 
-#Версия
+# ЭТАП 1: Сборка (build stage)
 FROM python:3.11-alpine as builder
-#Создание проекта
+
+# Устанавливаем рабочую директорию
 WORKDIR /app
-# Устанавливаем необходимые системные зависимости, чтобы можно было собирать Python-библиотеки
+
+# Устанавливаем зависимости, нужные для сборки Python-библиотек
 RUN apk add --no-cache \
-# базовые компиляторы и make
-    build-base \           
-# для cryptography и других библиотек
-    libffi-dev \      
-# компилятор C     
-    gcc \                 
-# стандартная C-библиотека для Linux
-    musl-dev \       
-# заголовки для работы с PostgreSQL (psycopg2)     
-    postgresql-dev \    
-# OpenSSL для безопасных соединений
-    openssl-dev
-# Копируем pyproject.toml (зависимости) в контейнер
+    build-base \           # компиляторы, make
+    libffi-dev \           # для cryptography
+    gcc \                  # C-компилятор
+    musl-dev \             # стандартная C-библиотека
+    postgresql-dev \       # psycopg2 (PostgreSQL)
+    openssl-dev            # SSL-поддержка
+
+# Копируем зависимости проекта
 COPY pyproject.toml ./
+
 # Обновляем pip и устанавливаем зависимости (включая тестовые)
 RUN pip install --upgrade pip && pip install .[test]
 
+# Копируем остальной код проекта
 COPY . .
 
-# Этап 2: финальный образ — чистый, только с нужными runtime-библиотеками
+
+
+# ЭТАП 2: Финальный образ
 FROM python:3.11-alpine
 
-# Устанавливаем только необходимые для запуска библиотеки (не для сборки)
+# Устанавливаем только библиотеки, нужные для запуска
 RUN apk add --no-cache \
-    postgresql-libs     
+    postgresql-libs       # для psycopg2
 
 # Создаём непривилегированного пользователя
-RUN adduser -m appuser
+RUN adduser -D appuser   
 
-#Создаём рабочую дерикторию
+# Устанавливаем рабочую директорию
 WORKDIR /app
 
-# Копируем собранный проект из builder-контейнера
+# Копируем всё из builder-образа
 COPY --from=builder /app /app
 
-# Устанавливаем зависимости без dev и тестовых библиотек
+# Устанавливаем зависимости (только runtime, без dev)
 RUN pip install --no-cache-dir .
 
-# Запуск от имени безопасного пользователя
+# Используем безопасного пользователя
 USER appuser
 
-# Команда запуска FastAPI-приложения через uvicorn
+# Команда запуска FastAPI-приложения
 CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8070"]
