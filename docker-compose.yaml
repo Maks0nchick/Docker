@@ -1,0 +1,10 @@
+services:  # Определяем список сервисов (контейнеров)
+  db:      # Имя сервиса (будет: контейнер с Postgres)
+    image: postgres:latest  # Используем официальный образ PostgreSQL
+    restart: unless-stopped # Перезапускается при сбоях, но не при ручной остановке
+    environment:   #Окружения
+      POSTGRES_DB: kubsu         # Имя БД
+      POSTGRES_USER: kubsu       # Имя пользователя
+      POSTGRES_PASSWORD: kubsu   # Пароль
+    ports:
+      - "5432:5432"              # Пробрасываем порт (host:container)
