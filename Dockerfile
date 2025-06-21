@@ -6,12 +6,12 @@ WORKDIR /app
 
 # Устанавливаем системные зависимости для сборки Python-библиотек
 RUN apk add --no-cache \
-build-base \          
-libffi-dev \          
-gcc \                 
-musl-dev \            
-postgresql-dev \      
-openssl-dev           
+    build-base \          
+    libffi-dev \          
+    gcc \                 
+    musl-dev \            
+    postgresql-dev \      
+    openssl-dev           
 
 # Копируем зависимости проекта
 COPY pyproject.toml ./
@@ -22,14 +22,12 @@ RUN pip install --upgrade pip && pip install .[test]
 # Копируем всё остальное (код, тесты, и т.д.)
 COPY . .
 
-
-
 # ЭТАП 2: Финальный образ (для запуска)
 FROM python:3.11-alpine
 
 # Устанавливаем только runtime-зависимости
 RUN apk add --no-cache \
-postgresql-libs       # для работы с PostgreSQL
+    postgresql-libs       # для работы с PostgreSQL
 
 # Создаём непривилегированного пользователя
 RUN adduser -D appuser
@@ -43,8 +41,7 @@ COPY --from=builder /app /app
 # Устанавливаем Python-зависимости (без dev и test)
 RUN pip install --no-cache-dir .
 
-
-# Запускаем от имени безопасного пользователяAdd commentMore actions
+# Запускаем от имени безопасного пользователя
 USER appuser
 
 # Команда запуска FastAPI-приложения через uvicorn
