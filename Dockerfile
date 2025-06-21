@@ -19,6 +19,8 @@ COPY pyproject.toml ./
 # Устанавливаем Python-зависимости с тестовыми (если указаны в pyproject.toml)
 RUN pip install --upgrade pip && pip install .[test]
 
+RUN pip install pytest  # для Python
+
 # Копируем всё остальное (код, тесты, и т.д.)
 COPY . .
 
