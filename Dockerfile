@@ -42,3 +42,10 @@ COPY --from=builder /app /app
 
 # Устанавливаем Python-зависимости (без dev и test)
 RUN pip install --no-cache-dir .
+
+
+# Запускаем от имени безопасного пользователяAdd commentMore actions
+USER appuser
+
+# Команда запуска FastAPI-приложения через uvicorn
+CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8070"]
