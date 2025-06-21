@@ -1,52 +1,49 @@
 # ЭТАП 1: Сборка зависимостей
 FROM python:3.11-alpine as builder
 
+# Устанавливаем системные зависимости для сборки
+RUN apk add --no-cache \
+    build-base \
+    libffi-dev \
+    gcc \
+    musl-dev \
+    postgresql-dev \
+    openssl-dev
+
 # Устанавливаем рабочую директорию
 WORKDIR /app
-
-# Устанавливаем системные зависимости для сборки Python-библиотек
-RUN apk add --no-cache \
-    build-base \          
-    libffi-dev \          
-    gcc \                 
-    musl-dev \            
-    postgresql-dev \      
-    openssl-dev           
 
 # Копируем зависимости проекта
-COPY pyproject.toml ./
+COPY pyproject.toml poetry.lock* ./
 
-# Устанавливаем Python-зависимости с тестовыми (если указаны в pyproject.toml)
-RUN pip install --upgrade pip && pip install .[test]
+# Устанавливаем Python-зависимости (включая тестовые)
+RUN pip install --upgrade pip && \
+    pip install pytest && \
+    pip install .[test]
 
-RUN pip install pytest  # для Python
-
-# Копируем всё остальное (код, тесты, и т.д.)
+# Копируем всё остальное
 COPY . .
 
-
-
-# ЭТАП 2: Финальный образ (для запуска)
+# ЭТАП 2: Финальный образ
 FROM python:3.11-alpine
 
-# Устанавливаем только runtime-зависимости
-RUN apk add --no-cache \
-    postgresql-libs       # для работы с PostgreSQL
+# Runtime зависимости
+RUN apk add --no-cache postgresql-libs
 
-# Создаём непривилегированного пользователя
+# Создаём пользователя
 RUN adduser -D appuser
 
-# Устанавливаем рабочую директорию
 WORKDIR /app
 
-# Копируем всё из builder-контейнера
-COPY --from=builder /app /app
+# Копируем только необходимое из builder-этапа
+COPY --from=builder --chown=appuser:appuser /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
+COPY --from=builder --chown=appuser:appuser /app /app
 
-# Устанавливаем Python-зависимости (без dev и test)
-RUN pip install --no-cache-dir .
+# Устанавливаем PATH для pytest
+ENV PATH="/home/appuser/.local/bin:${PATH}"
 
-# Запускаем от имени безопасного пользователя
+# Переключаемся на непривилегированного пользователя
 USER appuser
 
-# Команда запуска FastAPI-приложения через uvicorn
+# Команда по умолчанию
 CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8070"]
